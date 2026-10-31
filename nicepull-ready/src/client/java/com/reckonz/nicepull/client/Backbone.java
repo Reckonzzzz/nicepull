@@ -5,9 +5,11 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLevelEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Display;
@@ -134,32 +136,4 @@ public final class Backbone {
 		curr = boneStand.position();
 		Vec3 delta = prev == null ? null : curr.subtract(prev);
 		if (delta != null && delta.lengthSqr() > 1.0E-6) {
-			if (initialDir == null) {
-				initialDir = delta.normalize();
-			} else if (!returning) {
-				double dot = delta.normalize().dot(initialDir);
-				if (dot < 0.995) {
-					returning = true;
-					onBackbone(mc);
-				}
-			}
-		}
-		prev = curr;
-	}
-
-	private static void onBackbone(Minecraft mc) {
-		hudTicks = HUD_TICKS;
-		if (SHOW_GEAR_IN_CHAT && mc.player != null) {
-			String hand = mc.player.getMainHandItem().getDisplayName().getString();
-			String helmet = mc.player.getItemBySlot(EquipmentSlot.HEAD).getDisplayName().getString();
-			double seconds = Math.max(p4Ticks, 0) / 20.0;
-			mc.player.sendSystemMessage(
-	Component.literal(String.format("Backbone hit with %s and %s at %.1fs.", hand, helmet, seconds)));
-		}
-	}
-
-	private static String skyblockId(ItemStack stack) {
-		var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-		return tag.getString("id").orElse("");
-	}
-}
+			if
