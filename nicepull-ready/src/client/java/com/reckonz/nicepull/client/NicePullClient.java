@@ -7,39 +7,47 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 
 public class NicePullClient implements ClientModInitializer {
-    private static boolean humanCannonballPurchased;
-    private static int pendingTicks;
-    private static boolean tinyMobsEnabled;
+
+    private static boolean humanCannonballPurchased = false;
+    private static int pendingTicks = 0;
+    private static boolean tinyMobsEnabled = false;
 
     private static final String TINY_MOBS_START =
             "[NPC] Elle: Talk with me to begin!";
+
     private static final String TINY_MOBS_STOP =
             "[NPC] Elle: Phew! The Ballista is finally ready! It should be strong enough to tank Kuudra's blows now!";
 
     @Override
     public void onInitializeClient() {
-        // Auto close the shop after buying Human Cannonball.
+
         ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
-            if (!overlay) {
-                String chatText = message.getString();
-                if (TINY_MOBS_START.equals(chatText)) {
-                    tinyMobsEnabled = true;
-                } else if (TINY_MOBS_STOP.equals(chatText)) {
-                    tinyMobsEnabled = false;
-                }
+            if (overlay) return;
+
+            String chatText = message.getString();
+
+            // TinyMobs activation and deactivation
+            if (TINY_MOBS_START.equals(chatText)) {
+                tinyMobsEnabled = true;
+            } else if (TINY_MOBS_STOP.equals(chatText)) {
+                tinyMobsEnabled = false;
             }
 
-            if (!overlay && message.getString().equals("You purchased Human Cannonball!")) {
+            // Human Cannonball purchase detection
+            if (chatText.equals("You purchased Human Cannonball!")) {
                 Minecraft mc = Minecraft.getInstance();
+
                 if (mc.player != null) {
                     humanCannonballPurchased = true;
                     pendingTicks = 40;
+
+                    // Close the current shop immediately
                     mc.player.closeContainer();
                 }
             }
         });
 
-        // Prevent a delayed purchase flag from affecting an unrelated screen.
+        // Reset purchase flag after 40 ticks
         ClientTickEvents.END_CLIENT_TICK.register(mc -> {
             if (humanCannonballPurchased && --pendingTicks <= 0) {
                 humanCannonballPurchased = false;
@@ -54,8 +62,10 @@ public class NicePullClient implements ClientModInitializer {
 
     public static boolean consumeHumanCannonballPurchase() {
         if (!humanCannonballPurchased) return false;
+
         humanCannonballPurchased = false;
         pendingTicks = 0;
+
         return true;
     }
 }
