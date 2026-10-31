@@ -5,7 +5,7 @@
 	"client": [
 		"TinyMobsMixin",
 		"HollowWandMixin"
-		"ClientPlayNetworkHandleMixin"
+		"ShopReopenMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
