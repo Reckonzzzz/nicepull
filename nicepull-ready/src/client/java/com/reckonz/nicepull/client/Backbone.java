@@ -153,9 +153,8 @@ public final class Backbone {
 			String hand = mc.player.getMainHandItem().getDisplayName().getString();
 			String helmet = mc.player.getItemBySlot(EquipmentSlot.HEAD).getDisplayName().getString();
 			double seconds = Math.max(p4Ticks, 0) / 20.0;
-			mc.player.displayClientMessage(
-				Component.literal(String.format("Backbone hit with %s and %s at %.1fs.", hand, helmet, seconds)),
-				false);
+			mc.player.sendSystemMessage(
+	Component.literal(String.format("Backbone hit with %s and %s at %.1fs.", hand, helmet, seconds)));
 		}
 	}
 
