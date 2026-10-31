@@ -5,6 +5,7 @@
 	"client": [
 		"TinyMobsMixin",
 		"HollowWandMixin"
+		"ClientPlayNetworkHandleMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
