@@ -25,7 +25,7 @@ public class HollowWandMixin {
 	@ModifyArgs(method = "pick",
 		at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/world/entity/projectile/ProjectileUtil;getEntityHitResult(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;D)Lnet/minecraft/world/phys/EntityHitResult;"))
-	private void nicepull$entityHit(Args args) {
+	private static void nicepull$entityHit(Args args) {
 		if (nicepull$holdingWand()) {
 			args.set(4, (Predicate<Entity>) e -> false);
 		}
