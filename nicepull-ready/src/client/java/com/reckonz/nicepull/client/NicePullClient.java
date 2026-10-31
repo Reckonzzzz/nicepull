@@ -1,71 +1,42 @@
+package com.reckonz.nicepull.client.mixin;
 
-package com.reckonz.nicepull.client;
-
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import java.util.function.Predicate;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.component.CustomData;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyArgs;
+import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
-public class NicePullClient implements ClientModInitializer {
+@Mixin(LocalPlayer.class)
+public class HollowWandMixin {
+	@ModifyArgs(method = "raycastHitResult",
+		at = @At(value = "INVOKE",
+			target = "Lnet/minecraft/world/item/component/AttackRange;getClosesetHit(Lnet/minecraft/world/entity/Entity;FLjava/util/function/Predicate;)Lnet/minecraft/world/phys/HitResult;"))
+	private void nicepull$closestHit(Args args) {
+		if (nicepull$holdingWand()) {
+			args.set(2, (Predicate<Entity>) e -> false);
+		}
+	}
 
-    private static boolean humanCannonballPurchased = false;
-    private static int pendingTicks = 0;
-    private static boolean tinyMobsEnabled = false;
+	@ModifyArgs(method = "pick",
+		at = @At(value = "INVOKE",
+			target = "Lnet/minecraft/world/entity/projectile/ProjectileUtil;getEntityHitResult(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;D)Lnet/minecraft/world/phys/EntityHitResult;"))
+	private static void nicepull$entityHit(Args args) {
+		if (nicepull$holdingWand()) {
+			args.set(4, (Predicate<Entity>) e -> false);
+		}
+	}
 
-    private static final String TINY_MOBS_START =
-            "[NPC] Elle: Talk with me to begin!";
-
-    private static final String TINY_MOBS_STOP =
-            "[NPC] Elle: Phew! The Ballista is finally ready! It should be strong enough to tank Kuudra's blows now!";
-
-    @Override
-    public void onInitializeClient() {
-
-        ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
-            if (overlay) return;
-
-            String chatText = message.getString();
-
-            // TinyMobs activation and deactivation
-            if (TINY_MOBS_START.equals(chatText)) {
-                tinyMobsEnabled = true;
-            } else if (TINY_MOBS_STOP.equals(chatText)) {
-                tinyMobsEnabled = false;
-            }
-
-            // Human Cannonball purchase detection
-            if (chatText.equals("You purchased Human Cannonball!")) {
-                Minecraft mc = Minecraft.getInstance();
-
-                if (mc.player != null) {
-                    humanCannonballPurchased = true;
-                    pendingTicks = 40;
-
-                    // Close the current shop immediately
-                    mc.player.closeContainer();
-                }
-            }
-        });
-
-        // Reset purchase flag after 40 ticks
-        ClientTickEvents.END_CLIENT_TICK.register(mc -> {
-            if (humanCannonballPurchased && --pendingTicks <= 0) {
-                humanCannonballPurchased = false;
-                pendingTicks = 0;
-            }
-        });
-    }
-
-    public static boolean isTinyMobsEnabled() {
-        return tinyMobsEnabled;
-    }
-
-    public static boolean consumeHumanCannonballPurchase() {
-        if (!humanCannonballPurchased) return false;
-
-        humanCannonballPurchased = false;
-        pendingTicks = 0;
-
-        return true;
-    }
+	private static boolean nicepull$holdingWand() {
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (player == null) return false;
+		var tag = player.getMainHandItem()
+			.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY)
+			.copyTag();
+		return tag.getString("id").map("HOLLOW_WAND"::equals).orElse(false);
+	}
 }
