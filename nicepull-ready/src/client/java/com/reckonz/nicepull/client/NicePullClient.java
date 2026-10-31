@@ -6,8 +6,10 @@ import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.minecraft.client.Minecraft;
 
 public class NicePullClient implements ClientModInitializer {
-	/** True between Elle's start message and the Ballista message. */
+	/** Tiny mobs: true between Elle's start message and the Ballista message. */
 	public static volatile boolean inKuudra = false;
+	/** Backbone alert: true from Elle's start message until you leave the world. */
+	public static volatile boolean inFight = false;
 
 	private static final String START = "[NPC] Elle: Talk with me to begin!";
 	private static final String STOP =
@@ -19,9 +21,9 @@ public class NicePullClient implements ClientModInitializer {
 			if (overlay) return;
 			String text = message.getString().strip();
 
-			// Tiny mobs on/off.
 			if (text.equals(START)) {
 				inKuudra = true;
+				inFight = true;
 			} else if (text.equals(STOP)) {
 				inKuudra = false;
 			}
@@ -35,7 +37,12 @@ public class NicePullClient implements ClientModInitializer {
 			}
 		});
 
-		// Reset when the world changes so it can't get stuck on.
-		ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> inKuudra = false);
+		// Reset when the world changes so nothing gets stuck on.
+		ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((client, level) -> {
+			inKuudra = false;
+			inFight = false;
+		});
+
+		Backbone.init();
 	}
 }
