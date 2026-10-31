@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(EntityRenderDispatcher.class)
 public class TinyMobsMixin {
 	// Change this number to make zombies bigger or smaller (1.0 = normal size).
-	private static final float SCALE = 0.4f;
+	private static final float SCALE = 0.5f;
 
 	@Inject(method = "submit",
 		at = @At(value = "INVOKE",
