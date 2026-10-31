@@ -1,5 +1,7 @@
+
 package com.reckonz.nicepull.client.mixin;
 
+import com.reckonz.nicepull.client.NicePullClient;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
@@ -13,18 +15,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(EntityRenderDispatcher.class)
 public class TinyMobsMixin {
-	// Change this number to make zombies bigger or smaller (1.0 = normal size).
-	private static final float SCALE = 0.5f;
+    // 1.0 = normal size; 0.5 = half size.
+    private static final float SCALE = 0.5f;
 
-	@Inject(method = "submit",
-		at = @At(value = "INVOKE",
-			target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(DDD)V",
-			shift = At.Shift.AFTER))
-	private void nicepull$tiny(EntityRenderState renderState, CameraRenderState camera,
-			double x, double y, double z, PoseStack poseStack,
-			SubmitNodeCollector collector, CallbackInfo ci) {
-		if (BuiltInRegistries.ENTITY_TYPE.getKey(renderState.entityType).getPath().equals("zombie")) {
-			poseStack.scale(SCALE, SCALE, SCALE);
-		}
-	}
+    @Inject(method = "submit",
+        at = @At(value = "INVOKE",
+            target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(DDD)V",
+            shift = At.Shift.AFTER))
+    private void nicepull$tiny(EntityRenderState renderState, CameraRenderState camera,
+            double x, double y, double z, PoseStack poseStack,
+            SubmitNodeCollector collector, CallbackInfo ci) {
+
+        if (NicePullClient.isTinyMobsEnabled()
+                && BuiltInRegistries.ENTITY_TYPE.getKey(renderState.entityType)
+                        .getPath().equals("zombie")) {
+            poseStack.scale(SCALE, SCALE, SCALE);
+        }
+    }
 }
