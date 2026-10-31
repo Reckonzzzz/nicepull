@@ -1,42 +1,47 @@
-package com.reckonz.nicepull.client.mixin;
+package com.reckonz.nicepull.client;
 
-import java.util.function.Predicate;
+import java.util.Locale;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.item.component.CustomData;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyArgs;
-import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.network.chat.Component;
 
-@Mixin(LocalPlayer.class)
-public class HollowWandMixin {
-	@ModifyArgs(method = "raycastHitResult",
-		at = @At(value = "INVOKE",
-			target = "Lnet/minecraft/world/item/component/AttackRange;getClosesetHit(Lnet/minecraft/world/entity/Entity;FLjava/util/function/Predicate;)Lnet/minecraft/world/phys/HitResult;"))
-	private void nicepull$closestHit(Args args) {
-		if (nicepull$holdingWand()) {
-			args.set(2, (Predicate<Entity>) e -> false);
-		}
-	}
+public class NicePullClient implements ClientModInitializer {
+	/** True while the tab list says you are in Kuudra. */
+	public static volatile boolean inKuudra = false;
 
-	@ModifyArgs(method = "pick",
-		at = @At(value = "INVOKE",
-			target = "Lnet/minecraft/world/entity/projectile/ProjectileUtil;getEntityHitResult(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;D)Lnet/minecraft/world/phys/EntityHitResult;"))
-	private static void nicepull$entityHit(Args args) {
-		if (nicepull$holdingWand()) {
-			args.set(4, (Predicate<Entity>) e -> false);
-		}
-	}
+	private static int tickCounter = 0;
 
-	private static boolean nicepull$holdingWand() {
-		LocalPlayer player = Minecraft.getInstance().player;
-		if (player == null) return false;
-		var tag = player.getMainHandItem()
-			.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY)
-			.copyTag();
-		return tag.getString("id").map("HOLLOW_WAND"::equals).orElse(false);
+	@Override
+	public void onInitializeClient() {
+		// Auto close the shop after buying Human Cannonball.
+		ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
+			if (!overlay && message.getString().equals("You purchased Human Cannonball!")) {
+				var player = Minecraft.getInstance().player;
+				if (player != null) {
+					player.closeContainer();
+				}
+			}
+		});
+
+		// Work out whether we are in Kuudra by reading the "Area: ..." line of the tab list.
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (client.level == null || client.getConnection() == null) {
+				inKuudra = false;
+				return;
+			}
+			if (++tickCounter % 20 != 0) return;
+			for (PlayerInfo info : client.getConnection().getOnlinePlayers()) {
+				Component name = info.getTabListDisplayName();
+				if (name == null) continue;
+				String text = name.getString().strip();
+				if (text.startsWith("Area:")) {
+					inKuudra = text.toLowerCase(Locale.ROOT).contains("kuudra");
+					break;
+				}
+			}
+		});
 	}
 }
