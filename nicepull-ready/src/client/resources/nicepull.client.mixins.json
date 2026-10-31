@@ -1,0 +1,15 @@
+{
+	"required": true,
+	"package": "com.reckonz.nicepull.client.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"TinyMobsMixin",
+		"HollowWandMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

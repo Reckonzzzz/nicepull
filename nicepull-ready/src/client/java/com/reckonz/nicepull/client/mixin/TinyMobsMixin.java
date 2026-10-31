@@ -1,0 +1,30 @@
+package com.reckonz.nicepull.client.mixin;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
+import net.minecraft.world.entity.EntityType;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+@Mixin(EntityRenderDispatcher.class)
+public class TinyMobsMixin {
+	// Change this number to make zombies bigger or smaller (1.0 = normal size).
+	private static final float SCALE = 0.4f;
+
+	@Inject(method = "submit",
+		at = @At(value = "INVOKE",
+			target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(DDD)V",
+			shift = At.Shift.AFTER))
+	private void nicepull$tiny(EntityRenderState renderState, CameraRenderState camera,
+			double x, double y, double z, PoseStack poseStack,
+			SubmitNodeCollector collector, CallbackInfo ci) {
+		if (renderState.entityType == EntityType.ZOMBIE) {
+			poseStack.scale(SCALE, SCALE, SCALE);
+		}
+	}
+}

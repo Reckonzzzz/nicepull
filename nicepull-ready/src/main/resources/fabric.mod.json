@@ -1,0 +1,37 @@
+{
+	"schemaVersion": 1,
+	"id": "nicepull",
+	"version": "${version}",
+	"name": "NicePull",
+	"description": "Tiny zombies, auto-close Human Cannonball shop, and Hollow Wand click-through.",
+	"authors": [
+		"reckonz"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/nicepull/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"main": [
+			"com.reckonz.nicepull.NicePull"
+		],
+		"client": [
+			"com.reckonz.nicepull.client.NicePullClient"
+		]
+	},
+	"mixins": [
+		{
+			"config": "nicepull.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
