@@ -5,7 +5,7 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -23,7 +23,7 @@ public class TinyMobsMixin {
 	private void nicepull$tiny(EntityRenderState renderState, CameraRenderState camera,
 			double x, double y, double z, PoseStack poseStack,
 			SubmitNodeCollector collector, CallbackInfo ci) {
-		if (renderState.entityType == EntityType.ZOMBIE) {
+		if (BuiltInRegistries.ENTITY_TYPE.getKey(renderState.entityType).getPath().equals("zombie")) {
 			poseStack.scale(SCALE, SCALE, SCALE);
 		}
 	}
