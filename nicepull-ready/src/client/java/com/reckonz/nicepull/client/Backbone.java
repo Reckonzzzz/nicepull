@@ -136,4 +136,37 @@ public final class Backbone {
 		curr = boneStand.position();
 		Vec3 delta = prev == null ? null : curr.subtract(prev);
 		if (delta != null && delta.lengthSqr() > 1.0E-6) {
-			if
+			if (initialDir == null) {
+				initialDir = delta.normalize();
+			} else if (!returning) {
+				double dot = delta.normalize().dot(initialDir);
+				if (dot < 0.995) {
+					returning = true;
+					onBackbone(mc);
+				}
+			}
+		}
+		prev = curr;
+	}
+
+	private static void onBackbone(Minecraft mc) {
+		hudTicks = HUD_TICKS;
+		if (SHOW_GEAR_IN_CHAT && mc.player != null) {
+			String hand = mc.player.getMainHandItem().getDisplayName().getString();
+			String helmet = mc.player.getItemBySlot(EquipmentSlot.HEAD).getDisplayName().getString();
+			double seconds = Math.max(p4Ticks, 0) / 20.0;
+
+			MutableComponent message = Component.literal("Backbone hit with ").withStyle(ChatFormatting.GREEN)
+				.append(Component.literal(hand).withStyle(ChatFormatting.RED))
+				.append(Component.literal(" and ").withStyle(ChatFormatting.GREEN))
+				.append(Component.literal(helmet).withStyle(ChatFormatting.RED))
+				.append(Component.literal(String.format(" at %.1fs.", seconds)).withStyle(ChatFormatting.GREEN));
+			mc.player.sendSystemMessage(message);
+		}
+	}
+
+	private static String skyblockId(ItemStack stack) {
+		var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+		return tag.getString("id").orElse("");
+	}
+}
