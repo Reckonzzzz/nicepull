@@ -21,9 +21,9 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 
 public final class RendPullTracker {
 	// A player counts as the puller if they swung within this many milliseconds.
-	private static final long WINDOW_MS = 270;
+	private static final long WINDOW_MS = 300;
 	// Prevent the same player from being announced again within this time.
-	private static final long ANNOUNCE_COOLDOWN_MS = 1100;
+	private static final long ANNOUNCE_COOLDOWN_MS = 1800;
 	// Only players this close to Kuudra (in blocks) can be credited. Raise or lower to taste.
 	private static final double MAX_PULL_DISTANCE = 12.0;
 	// Kuudra's health arrives as 0-25000, real damage is that drop times 9600.
@@ -32,7 +32,7 @@ public final class RendPullTracker {
 	private static final float MIN_DROP = 1666f;
 	private static final float START_HP = 24999f;
 	// Early-fight hits: bigger than this means someone else pulled too.
-	private static final float MULTI_PULL_DAMAGE = 100_000_000f;
+	private static final float MULTI_PULL_DAMAGE = 94_000_000f;
 	// Bigger than this means two more people pulled with one found (or one more with two found).
 	private static final float BIG_PULL_DAMAGE = 170_000_000f;
 	// How long after dropping into the pit these rules apply.
