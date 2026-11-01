@@ -21,7 +21,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 
 public final class RendPullTracker {
 	// A player counts as the puller if they swung within this many milliseconds.
-	private static final long WINDOW_MS = 300;
+	private static final long WINDOW_MS = 275;
 	// Prevent the same player from being announced again within this time.
 	private static final long ANNOUNCE_COOLDOWN_MS = 1800;
 	// Only players this close to Kuudra (in blocks) can be credited. Raise or lower to taste.
@@ -33,6 +33,8 @@ public final class RendPullTracker {
 	private static final float START_HP = 24999f;
 	// Pulls at or below this only show the fastest player (the one who swung first).
 	private static final float SMALL_PULL_DAMAGE = 39_000_000f;
+	// Pulls above the small limit and up to this only show the fastest 2 players.
+	private static final float MEDIUM_PULL_DAMAGE = 75_000_000f;
 	// Early-fight hits: bigger than this means someone else pulled too.
 	private static final float MULTI_PULL_DAMAGE = 94_000_000f;
 	// Bigger than this means two more people pulled with one found (or one more with two found).
@@ -176,15 +178,15 @@ public final class RendPullTracker {
 			lastAnnounced.put(e.getKey(), now);
 		}
 
-		// Small pull: only the fastest player (earliest swing start) is shown.
-		List<Map.Entry<String, Long>> shown = eligible;
-		if (damage <= SMALL_PULL_DAMAGE && eligible.size() > 1) {
-			Map.Entry<String, Long> fastest = eligible.get(0);
-			for (Map.Entry<String, Long> e : eligible) {
-				if (e.getValue() < fastest.getValue()) fastest = e;
-			}
-			shown = List.of(fastest);
-		}
+		// Fastest first (earliest swing start).
+		List<Map.Entry<String, Long>> sorted = new ArrayList<>(eligible);
+		sorted.sort(Map.Entry.comparingByValue());
+
+		// Small pulls show only the fastest 1 player, medium pulls only the fastest 2.
+		int limit = damage <= SMALL_PULL_DAMAGE ? 1
+			: damage <= MEDIUM_PULL_DAMAGE ? 2
+			: Integer.MAX_VALUE;
+		List<Map.Entry<String, Long>> shown = sorted.size() > limit ? sorted.subList(0, limit) : sorted;
 
 		List<String> names = new ArrayList<>();
 		for (Map.Entry<String, Long> e : shown) {
