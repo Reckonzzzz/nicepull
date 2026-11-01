@@ -21,7 +21,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 
 public final class RendPullTracker {
 	// A player counts as the puller if they swung within this many milliseconds.
-	private static final long WINDOW_MS = 250;
+	private static final long WINDOW_MS = 200;
 	// Kuudra's health arrives as 0-25000, real damage is that drop times 9600.
 	private static final float HP_TO_DAMAGE = 9600f;
 	// Ignore health drops smaller than this (about 16M damage).
