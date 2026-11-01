@@ -23,7 +23,7 @@ public final class RendPullTracker {
 	// A player counts as the puller if they swung within this many milliseconds.
 	private static final long WINDOW_MS = 270;
 	// Prevent the same player from being announced again within this time.
-	private static final long ANNOUNCE_COOLDOWN_MS = 1100;
+	private static final long ANNOUNCE_COOLDOWN_MS = 1300;
 	// Only players this close to Kuudra (in blocks) can be credited. Raise or lower to taste.
 	private static final double MAX_PULL_DISTANCE = 12.0;
 	// Kuudra's health arrives as 0-25000, real damage is that drop times 9600.
@@ -31,6 +31,9 @@ public final class RendPullTracker {
 	// Ignore health drops smaller than this (about 16M damage).
 	private static final float MIN_DROP = 1666f;
 	private static final float START_HP = 24999f;
+	// Unknown pullers on a hit this big, this early in the fight, are shown as "2+ ppl".
+	private static final float MULTI_PULL_DAMAGE = 100_000_000f;
+	private static final long MULTI_PULL_WINDOW_MS = 3200;
 
 	private static final Map<String, Long> swings = new ConcurrentHashMap<>();
 	private static final Map<String, Long> lastAnnounced = new ConcurrentHashMap<>();
@@ -123,13 +126,14 @@ public final class RendPullTracker {
 		float drop = Math.max(0f, lastHp - hp);
 		if (drop > MIN_DROP) {
 			float damage = drop * HP_TO_DAMAGE;
+			long elapsedMs = timerStart > 0 ? System.currentTimeMillis() - timerStart : -1;
 			ChatFormatting color = drop <= 4166f ? ChatFormatting.RED
 				: drop <= 7291f ? ChatFormatting.YELLOW : ChatFormatting.GREEN;
-			String time = timerStart > 0
-				? String.format(Locale.ROOT, "%.2fs", (System.currentTimeMillis() - timerStart) / 1000f)
+			String time = elapsedMs >= 0
+				? String.format(Locale.ROOT, "%.2fs", elapsedMs / 1000f)
 				: "?";
 
-			MutableComponent msg = Component.literal(recentPullers()).withStyle(ChatFormatting.WHITE)
+			MutableComponent msg = Component.literal(recentPullers(damage, elapsedMs)).withStyle(ChatFormatting.WHITE)
 				.append(Component.literal(" pulled for ").withStyle(ChatFormatting.WHITE))
 				.append(Component.literal(formatDamage(damage)).withStyle(color))
 				.append(Component.literal(" damage in " + time + ".").withStyle(ChatFormatting.WHITE));
@@ -138,28 +142,29 @@ public final class RendPullTracker {
 		lastHp = hp;
 	}
 
-	private static String recentPullers() {
+	private static String recentPullers(float damage, long elapsedMs) {
 		long now = System.currentTimeMillis();
 		List<String> names = new ArrayList<>();
-
 		var it = swings.entrySet().iterator();
 		while (it.hasNext()) {
 			var e = it.next();
 			String name = e.getKey();
-
 			if (now - e.getValue() <= WINDOW_MS) {
 				Long last = lastAnnounced.get(name);
-
 				if (last == null || now - last >= ANNOUNCE_COOLDOWN_MS) {
 					names.add(name);
 					lastAnnounced.put(name, now);
 				}
 			}
-
 			it.remove();
 		}
+		if (!names.isEmpty()) return String.join(" and ", names);
 
-		return names.isEmpty() ? "Someone" : String.join(" and ", names);
+		// Nobody found: a huge hit in the first seconds means several people pulled together.
+		if (elapsedMs >= 0 && elapsedMs <= MULTI_PULL_WINDOW_MS && damage > MULTI_PULL_DAMAGE) {
+			return "2+ ppl";
+		}
+		return "Someone";
 	}
 
 	private static String formatDamage(float d) {
