@@ -23,7 +23,7 @@ public final class RendPullTracker {
 	// A player counts as the puller if they swung within this many milliseconds.
 	private static final long WINDOW_MS = 250;
 	// Prevent the same player from being announced again within this time.
-	private static final long ANNOUNCE_COOLDOWN_MS = 700;
+	private static final long ANNOUNCE_COOLDOWN_MS = 1100;
 	// Only players this close to Kuudra (in blocks) can be credited. Raise or lower to taste.
 	private static final double MAX_PULL_DISTANCE = 12.0;
 	// Kuudra's health arrives as 0-25000, real damage is that drop times 9600.
