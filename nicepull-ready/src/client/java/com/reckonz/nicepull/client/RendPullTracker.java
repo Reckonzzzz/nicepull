@@ -10,13 +10,14 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.MagmaCube;
 
 public final class RendPullTracker {
 	// A player counts as the puller if they swung within this many milliseconds.
@@ -66,8 +67,11 @@ public final class RendPullTracker {
 		if (mc.player == null || mc.level == null) return;
 
 		Entity entity = mc.level.getEntity(packet.id());
-		if (!(entity instanceof MagmaCube cube)) return;
-		if (cube.getSize() != 30 || cube.getAttributeBaseValue(Attributes.MAX_HEALTH) != 100000.0 || !cube.isAlive()) return;
+		if (!(entity instanceof LivingEntity cube)) return;
+		if (!cube.isAlive()) return;
+		// Kuudra is the magma cube with exactly 100,000 max health.
+		if (!BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).getPath().equals("magma_cube")) return;
+		if (cube.getAttributeBaseValue(Attributes.MAX_HEALTH) != 100000.0) return;
 
 		List<SynchedEntityData.DataValue<?>> items = packet.packedItems();
 		if (items == null) return;
