@@ -39,6 +39,8 @@ public final class RendPullTracker {
 	private static final float MULTI_PULL_DAMAGE = 94_000_000f;
 	// Bigger than this means two more people pulled with one found (or one more with two found).
 	private static final float BIG_PULL_DAMAGE = 170_000_000f;
+	// With nobody found, a hit bigger than this is shown as "3+ ppl".
+	private static final float HUGE_PULL_DAMAGE = 180_000_000f;
 	// How long after dropping into the pit these rules apply.
 	private static final long MULTI_PULL_WINDOW_MS = 3000;
 
@@ -212,6 +214,9 @@ public final class RendPullTracker {
 		}
 
 		// Nobody found: a huge hit in the first seconds means several people pulled together.
+		if (early && damage > HUGE_PULL_DAMAGE) {
+			return "3+ ppl";
+		}
 		if (early && damage > MULTI_PULL_DAMAGE) {
 			return "2+ ppl";
 		}
