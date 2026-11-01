@@ -23,7 +23,7 @@ public final class RendPullTracker {
 	// A player counts as the puller if they swung within this many milliseconds.
 	private static final long WINDOW_MS = 270;
 	// Prevent the same player from being announced again within this time.
-	private static final long ANNOUNCE_COOLDOWN_MS = 1300;
+	private static final long ANNOUNCE_COOLDOWN_MS = 1100;
 	// Only players this close to Kuudra (in blocks) can be credited. Raise or lower to taste.
 	private static final double MAX_PULL_DISTANCE = 12.0;
 	// Kuudra's health arrives as 0-25000, real damage is that drop times 9600.
@@ -31,9 +31,12 @@ public final class RendPullTracker {
 	// Ignore health drops smaller than this (about 16M damage).
 	private static final float MIN_DROP = 1666f;
 	private static final float START_HP = 24999f;
-	// Unknown pullers on a hit this big, this early in the fight, are shown as "2+ ppl".
+	// Early-fight hits: bigger than this means someone else pulled too.
 	private static final float MULTI_PULL_DAMAGE = 100_000_000f;
-	private static final long MULTI_PULL_WINDOW_MS = 3200;
+	// Bigger than this means two more people pulled with one found (or one more with two found).
+	private static final float BIG_PULL_DAMAGE = 170_000_000f;
+	// How long after dropping into the pit these rules apply.
+	private static final long MULTI_PULL_WINDOW_MS = 3000;
 
 	private static final Map<String, Long> swings = new ConcurrentHashMap<>();
 	private static final Map<String, Long> lastAnnounced = new ConcurrentHashMap<>();
@@ -158,10 +161,27 @@ public final class RendPullTracker {
 			}
 			it.remove();
 		}
-		if (!names.isEmpty()) return String.join(" and ", names);
+
+		boolean early = elapsedMs >= 0 && elapsedMs <= MULTI_PULL_WINDOW_MS;
+
+		if (!names.isEmpty()) {
+			String joined = String.join(" and ", names);
+			if (early) {
+				// Damage too big for the players we saw: show how many more must have pulled.
+				int missing = 0;
+				if (names.size() == 1) {
+					if (damage > BIG_PULL_DAMAGE) missing = 2;
+					else if (damage > MULTI_PULL_DAMAGE) missing = 1;
+				} else if (names.size() == 2 && damage > BIG_PULL_DAMAGE) {
+					missing = 1;
+				}
+				if (missing > 0) joined += " +" + missing;
+			}
+			return joined;
+		}
 
 		// Nobody found: a huge hit in the first seconds means several people pulled together.
-		if (elapsedMs >= 0 && elapsedMs <= MULTI_PULL_WINDOW_MS && damage > MULTI_PULL_DAMAGE) {
+		if (early && damage > MULTI_PULL_DAMAGE) {
 			return "2+ ppl";
 		}
 		return "Someone";
