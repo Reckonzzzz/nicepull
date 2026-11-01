@@ -22,6 +22,8 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 public final class RendPullTracker {
 	// A player counts as the puller if they swung within this many milliseconds.
 	private static final long WINDOW_MS = 200;
+	// Prevent the same player from being announced again within this time.
+	private static final long ANNOUNCE_COOLDOWN_MS = 700;
 	// Only players this close to Kuudra (in blocks) can be credited. Raise or lower to taste.
 	private static final double MAX_PULL_DISTANCE = 12.0;
 	// Kuudra's health arrives as 0-25000, real damage is that drop times 9600.
@@ -31,6 +33,7 @@ public final class RendPullTracker {
 	private static final float START_HP = 24999f;
 
 	private static final Map<String, Long> swings = new ConcurrentHashMap<>();
+	private static final Map<String, Long> lastAnnounced = new ConcurrentHashMap<>();
 	private static float lastHp = START_HP;
 	private static long timerStart = 0;
 	private static LivingEntity kuudra = null;
@@ -45,6 +48,7 @@ public final class RendPullTracker {
 
 	private static void reset() {
 		swings.clear();
+		lastAnnounced.clear();
 		lastHp = START_HP;
 		timerStart = 0;
 		kuudra = null;
@@ -137,14 +141,24 @@ public final class RendPullTracker {
 	private static String recentPullers() {
 		long now = System.currentTimeMillis();
 		List<String> names = new ArrayList<>();
+
 		var it = swings.entrySet().iterator();
 		while (it.hasNext()) {
 			var e = it.next();
+			String name = e.getKey();
+
 			if (now - e.getValue() <= WINDOW_MS) {
-				names.add(e.getKey());
-				it.remove();
+				Long last = lastAnnounced.get(name);
+
+				if (last == null || now - last >= ANNOUNCE_COOLDOWN_MS) {
+					names.add(name);
+					lastAnnounced.put(name, now);
+				}
 			}
+
+			it.remove();
 		}
+
 		return names.isEmpty() ? "Someone" : String.join(" and ", names);
 	}
 
