@@ -31,6 +31,8 @@ public final class RendPullTracker {
 	// Ignore health drops smaller than this (about 16M damage).
 	private static final float MIN_DROP = 1666f;
 	private static final float START_HP = 24999f;
+	// Pulls at or below this only show the fastest player (the one who swung first).
+	private static final float SMALL_PULL_DAMAGE = 39_000_000f;
 	// Early-fight hits: bigger than this means someone else pulled too.
 	private static final float MULTI_PULL_DAMAGE = 94_000_000f;
 	// Bigger than this means two more people pulled with one found (or one more with two found).
@@ -38,6 +40,7 @@ public final class RendPullTracker {
 	// How long after dropping into the pit these rules apply.
 	private static final long MULTI_PULL_WINDOW_MS = 3000;
 
+	// Player name -> time their current swing started.
 	private static final Map<String, Long> swings = new ConcurrentHashMap<>();
 	private static final Map<String, Long> lastAnnounced = new ConcurrentHashMap<>();
 	private static float lastHp = START_HP;
@@ -93,11 +96,15 @@ public final class RendPullTracker {
 			}
 		}
 
-		// Only record swings from players standing near Kuudra.
+		// Record when each nearby player's swing started (a new swing replaces an old one).
 		if (kuudra == null) return;
 		for (AbstractClientPlayer p : mc.level.players()) {
 			if (p.swinging && p.distanceTo(kuudra) <= MAX_PULL_DISTANCE) {
-				swings.put(p.getGameProfile().name(), now);
+				String name = p.getGameProfile().name();
+				Long prev = swings.get(name);
+				if (prev == null || now - prev > WINDOW_MS) {
+					swings.put(name, now);
+				}
 			}
 		}
 	}
@@ -136,10 +143,12 @@ public final class RendPullTracker {
 				? String.format(Locale.ROOT, "%.2fs", elapsedMs / 1000f)
 				: "?";
 
-			MutableComponent msg = Component.literal(recentPullers(damage, elapsedMs)).withStyle(ChatFormatting.WHITE)
+			MutableComponent msg = Component.literal(recentPullers(damage, elapsedMs)).withStyle(ChatFormatting.BLUE)
 				.append(Component.literal(" pulled for ").withStyle(ChatFormatting.WHITE))
 				.append(Component.literal(formatDamage(damage)).withStyle(color))
-				.append(Component.literal(" damage in " + time + ".").withStyle(ChatFormatting.WHITE));
+				.append(Component.literal(" damage in ").withStyle(ChatFormatting.WHITE))
+				.append(Component.literal(time).withStyle(ChatFormatting.GREEN))
+				.append(Component.literal(".").withStyle(ChatFormatting.WHITE));
 			mc.player.sendSystemMessage(msg);
 		}
 		lastHp = hp;
@@ -147,19 +156,34 @@ public final class RendPullTracker {
 
 	private static String recentPullers(float damage, long elapsedMs) {
 		long now = System.currentTimeMillis();
-		List<String> names = new ArrayList<>();
+
+		// Everyone who swung in the window and isn't on cooldown.
+		List<Map.Entry<String, Long>> eligible = new ArrayList<>();
 		var it = swings.entrySet().iterator();
 		while (it.hasNext()) {
 			var e = it.next();
-			String name = e.getKey();
 			if (now - e.getValue() <= WINDOW_MS) {
-				Long last = lastAnnounced.get(name);
+				Long last = lastAnnounced.get(e.getKey());
 				if (last == null || now - last >= ANNOUNCE_COOLDOWN_MS) {
-					names.add(name);
-					lastAnnounced.put(name, now);
+					eligible.add(Map.entry(e.getKey(), e.getValue()));
 				}
 			}
 			it.remove();
+		}
+
+		// Small pull: only the fastest player (earliest swing start) gets the credit.
+		if (damage <= SMALL_PULL_DAMAGE && eligible.size() > 1) {
+			Map.Entry<String, Long> fastest = eligible.get(0);
+			for (Map.Entry<String, Long> e : eligible) {
+				if (e.getValue() < fastest.getValue()) fastest = e;
+			}
+			eligible = List.of(fastest);
+		}
+
+		List<String> names = new ArrayList<>();
+		for (Map.Entry<String, Long> e : eligible) {
+			names.add(e.getKey());
+			lastAnnounced.put(e.getKey(), now);
 		}
 
 		boolean early = elapsedMs >= 0 && elapsedMs <= MULTI_PULL_WINDOW_MS;
