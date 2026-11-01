@@ -21,7 +21,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 
 public final class RendPullTracker {
 	// A player counts as the puller if they swung within this many milliseconds.
-	private static final long WINDOW_MS = 300;
+	private static final long WINDOW_MS = 270;
 	// Prevent the same player from being announced again within this time.
 	private static final long ANNOUNCE_COOLDOWN_MS = 1100;
 	// Only players this close to Kuudra (in blocks) can be credited. Raise or lower to taste.
