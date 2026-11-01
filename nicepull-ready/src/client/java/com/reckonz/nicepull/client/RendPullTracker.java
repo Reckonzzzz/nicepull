@@ -171,19 +171,24 @@ public final class RendPullTracker {
 			it.remove();
 		}
 
-		// Small pull: only the fastest player (earliest swing start) gets the credit.
+		// Everyone found goes on cooldown, even players that end up hidden below.
+		for (Map.Entry<String, Long> e : eligible) {
+			lastAnnounced.put(e.getKey(), now);
+		}
+
+		// Small pull: only the fastest player (earliest swing start) is shown.
+		List<Map.Entry<String, Long>> shown = eligible;
 		if (damage <= SMALL_PULL_DAMAGE && eligible.size() > 1) {
 			Map.Entry<String, Long> fastest = eligible.get(0);
 			for (Map.Entry<String, Long> e : eligible) {
 				if (e.getValue() < fastest.getValue()) fastest = e;
 			}
-			eligible = List.of(fastest);
+			shown = List.of(fastest);
 		}
 
 		List<String> names = new ArrayList<>();
-		for (Map.Entry<String, Long> e : eligible) {
+		for (Map.Entry<String, Long> e : shown) {
 			names.add(e.getKey());
-			lastAnnounced.put(e.getKey(), now);
 		}
 
 		boolean early = elapsedMs >= 0 && elapsedMs <= MULTI_PULL_WINDOW_MS;
