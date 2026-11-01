@@ -22,6 +22,8 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 public final class RendPullTracker {
 	// A player counts as the puller if they swung within this many milliseconds.
 	private static final long WINDOW_MS = 200;
+	// Only players this close to Kuudra (in blocks) can be credited. Raise or lower to taste.
+	private static final double MAX_PULL_DISTANCE = 12.0;
 	// Kuudra's health arrives as 0-25000, real damage is that drop times 9600.
 	private static final float HP_TO_DAMAGE = 9600f;
 	// Ignore health drops smaller than this (about 16M damage).
@@ -31,6 +33,8 @@ public final class RendPullTracker {
 	private static final Map<String, Long> swings = new ConcurrentHashMap<>();
 	private static float lastHp = START_HP;
 	private static long timerStart = 0;
+	private static LivingEntity kuudra = null;
+	private static int scanTicks = 0;
 
 	private RendPullTracker() {}
 
@@ -43,6 +47,15 @@ public final class RendPullTracker {
 		swings.clear();
 		lastHp = START_HP;
 		timerStart = 0;
+		kuudra = null;
+		scanTicks = 0;
+	}
+
+	/** Kuudra is the magma cube with exactly 100,000 max health. */
+	private static boolean isKuudra(Entity entity) {
+		if (!(entity instanceof LivingEntity living) || !living.isAlive()) return false;
+		if (!BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).getPath().equals("magma_cube")) return false;
+		return living.getAttributeBaseValue(Attributes.MAX_HEALTH) == 100000.0;
 	}
 
 	private static void tick(Minecraft mc) {
@@ -54,10 +67,28 @@ public final class RendPullTracker {
 			if (Math.round(mc.player.getY()) < 10 && timerStart == 0) timerStart = now;
 		} else {
 			timerStart = 0;
+			kuudra = null;
+			return;
 		}
 
+		// Find Kuudra (re-checked twice a second until found).
+		if ((kuudra == null || !kuudra.isAlive()) && ++scanTicks >= 10) {
+			scanTicks = 0;
+			kuudra = null;
+			for (Entity e : mc.level.entitiesForRendering()) {
+				if (isKuudra(e)) {
+					kuudra = (LivingEntity) e;
+					break;
+				}
+			}
+		}
+
+		// Only record swings from players standing near Kuudra.
+		if (kuudra == null) return;
 		for (AbstractClientPlayer p : mc.level.players()) {
-			if (p.swinging) swings.put(p.getGameProfile().name(), now);
+			if (p.swinging && p.distanceTo(kuudra) <= MAX_PULL_DISTANCE) {
+				swings.put(p.getGameProfile().name(), now);
+			}
 		}
 	}
 
@@ -67,11 +98,8 @@ public final class RendPullTracker {
 		if (mc.player == null || mc.level == null) return;
 
 		Entity entity = mc.level.getEntity(packet.id());
-		if (!(entity instanceof LivingEntity cube)) return;
-		if (!cube.isAlive()) return;
-		// Kuudra is the magma cube with exactly 100,000 max health.
-		if (!BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).getPath().equals("magma_cube")) return;
-		if (cube.getAttributeBaseValue(Attributes.MAX_HEALTH) != 100000.0) return;
+		if (entity == null || !isKuudra(entity)) return;
+		kuudra = (LivingEntity) entity;
 
 		List<SynchedEntityData.DataValue<?>> items = packet.packedItems();
 		if (items == null) return;
