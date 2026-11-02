@@ -10,7 +10,7 @@ import net.minecraft.resources.Identifier;
 
 public final class FastDpsWarning {
 	// A DPS phase shorter than this many ticks counts as fast (66 ticks = 3.3 seconds).
-	private static final int FAST_TICKS = 66;
+	private static final int FAST_TICKS = 64;
 	// Show a red "FAST DPS!" alert on screen.
 	private static final boolean SHOW_ALERT = true;
 	// How long the alert stays on screen, in ticks (60 = 3 seconds).
