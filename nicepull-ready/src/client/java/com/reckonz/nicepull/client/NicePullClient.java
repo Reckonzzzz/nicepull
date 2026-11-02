@@ -61,5 +61,6 @@ public class NicePullClient implements ClientModInitializer {
 		Backbone.init();
 		RendPullTracker.init();
 		FastDpsWarning.init();
+		SoloDetector.init();
 	}
 }
