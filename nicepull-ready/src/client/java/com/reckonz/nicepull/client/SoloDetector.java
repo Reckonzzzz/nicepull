@@ -77,7 +77,7 @@ public final class SoloDetector {
 		if (PARTY_MESSAGE) {
 			Minecraft mc = Minecraft.getInstance();
 			if (mc.player != null && mc.getConnection() != null) {
-				mc.getConnection().sendCommand("pc SOLO!");
+				mc.getConnection().sendCommand("pc Your Solo!");
 			}
 		}
 	}
